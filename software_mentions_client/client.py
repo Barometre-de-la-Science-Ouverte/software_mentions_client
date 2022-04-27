@@ -58,7 +58,7 @@ class software_mentions_client(object):
                 line = line.replace(" ", "").strip()
                 if not line.startswith("#"):
                     self.blacklisted.append(line)
-        logging.info("blacklist size: " + str(len(self.blacklisted)))
+        print("Info: blacklist size: " + str(len(self.blacklisted)))
 
         self.scorched_earth = False
 
@@ -101,12 +101,12 @@ class software_mentions_client(object):
             r = requests.get(the_url)
 
             if r.status_code != 200:
-                logging.error('Softcite software mention server does not appear up and running ' + str(r.status_code))
+                print('Error: Softcite software mention server does not appear up and running ' + str(r.status_code))
             else:
-                logging.info("Softcite software mention server is up and running")
+                print("Info: Softcite software mention server is up and running")
                 return True
         except: 
-            logging.error('Softcite software mention server does not appear up and running: ' + 
+            print('Error: Softcite software mention server does not appear up and running: ' + 
                 'test call to Softcite software mention failed, please check and re-start a server.')
         return False
 
@@ -273,7 +273,7 @@ class software_mentions_client(object):
                 local_id = key.decode(encoding='UTF-8')
                 if result == "False":
                     # reprocess
-                    logging.info("reprocess " + local_id)
+                    print("Info: reprocess " + local_id)
                     pdf_files.append(os.path.join(data_path, generateStoragePath(local_id), local_id, local_id+".pdf"))
                     out_files.append(os.path.join(data_path, generateStoragePath(local_id), local_id, local_id+".software.json"))
                     # get the full record from the data_path env
@@ -295,7 +295,7 @@ class software_mentions_client(object):
         if len(pdf_files) > 0:
             self.annotate_batch(pdf_files, out_files, full_records)
 
-        logging.info("re-processed: " + str(nb_total) + " entries")
+        print("Info: re-processed: " + str(nb_total) + " entries")
 
     def reset(self):
         """
@@ -381,7 +381,7 @@ class software_mentions_client(object):
             else:
                 the_file = {'input': open(file_in, 'rb')}
         except:
-            logging.exception("input file appears invalid: " + file_in)
+            print("Exception:  input file appears invalid: " + file_in)
             return
 
         url = f'http://{self.config["software_mention_host"]}:{self.config["software_mention_port"]}'
@@ -393,29 +393,29 @@ class software_mentions_client(object):
         try:
             response = requests.post(url, files=the_file, data = {'disambiguate': 1}, timeout=self.config["timeout"])
             if response.status_code == 503:
-                logging.info('service overloaded, sleep ' + str(self.config['sleep_time']) + ' seconds')
+                print('Info: service overloaded, sleep ' + str(self.config['sleep_time']) + ' seconds')
                 time.sleep(self.config['sleep_time'])
                 return self.annotate(file_in, self.config, file_out, full_record)
             elif response.status_code >= 500:
-                logging.error('[{0}] Server Error '.format(response.status_code) + file_in)
+                print('Error: [{0}] Server Error '.format(response.status_code) + file_in)
             elif response.status_code == 404:
-                logging.error('[{0}] URL not found: [{1}] '.format(response.status_code + url))
+                print('Error: [{0}] URL not found: [{1}] '.format(response.status_code + url))
             elif response.status_code >= 400:
-                logging.error('[{0}] Bad Request'.format(response.status_code))
-                logging.error(response.content)
+                print('Error: [{0}] Bad Request'.format(response.status_code))
+                print('Error: ', response.content)
             elif response.status_code == 200:
                 jsonObject = response.json()
                 # note: in case the recognizer has found no software in the document, it will still return
                 # a json object as result, without mentions, but with MD5 and page information
             else:
-                logging.error('Unexpected Error: [HTTP {0}]: Content: {1}'.format(response.status_code, response.content))
+                print('Error: Unexpected Error: [HTTP {0}]: Content: {1}'.format(response.status_code, response.content))
 
         except requests.exceptions.Timeout:
-            logging.exception("The request to the annotation service has timeout")
+            print("Exception:  The request to the annotation service has timeout")
         except requests.exceptions.TooManyRedirects:
-            logging.exception("The request failed due to too many redirects")
+            print("Exception:  The request failed due to too many redirects")
         except requests.exceptions.RequestException:
-            logging.exception("The request failed")
+            print("Exception:  The request failed")
 
         # at this stage, if jsonObject is still at None, the process failed 
         if jsonObject is not None and 'mentions' in jsonObject and len(jsonObject['mentions']) > 0:
@@ -472,7 +472,7 @@ class software_mentions_client(object):
             try:
                 os.remove(file_in) 
             except:
-                logging.exception("Error while deleting file " + file_in)
+                print("Exception:  Error while deleting file " + file_in)
 
     def diagnostic(self, full_diagnostic=False):
         """
